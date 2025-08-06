@@ -11,13 +11,13 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Ground
+  - Obstacle
+  - Collectible
+  - End
+  - Player
+  - GhostPlayer
+  - Networked
   - 
   - 
   - 
