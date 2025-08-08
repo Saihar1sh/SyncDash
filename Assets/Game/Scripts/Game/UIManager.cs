@@ -16,6 +16,7 @@ public class UIManager : MonoBehaviour
 
     [Header("Buttons")]
     [SerializeField] private Button startButton;
+    [SerializeField] private Button mainmenuButton;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button exitButton;
 
@@ -23,6 +24,7 @@ public class UIManager : MonoBehaviour
     {
         startButton.onClick.AddListener(() => EventBusService.InvokeEvent(new RestartGameEvent()));
         restartButton.onClick.AddListener(() => EventBusService.InvokeEvent(new RestartGameEvent()));
+        mainmenuButton.onClick.AddListener(ShowMainMenu);
         exitButton.onClick.AddListener(ExitGame);
     }
 

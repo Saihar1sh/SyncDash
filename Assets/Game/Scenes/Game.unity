@@ -12399,6 +12399,7 @@ MonoBehaviour:
   scoreText: {fileID: 132559094}
   gameOverScoreText: {fileID: 2059441859}
   startButton: {fileID: 474652048}
+  mainmenuButton: {fileID: 845739860}
   restartButton: {fileID: 1742644845}
   exitButton: {fileID: 992302568}
 --- !u!114 &2063083103
@@ -12419,12 +12420,8 @@ MonoBehaviour:
   speedIncreaseRate: 0.1
   speedMultiplier: 1
   score: 0
-  uiManager: {fileID: 2063083102}
   platformManager: {fileID: 2106593249}
   networkedPlatformManager: {fileID: 373091667}
-  playerController: {fileID: 1318441070}
-  ghostPlayer: {fileID: 2062211118}
-  screenEffects: {fileID: 2063083104}
 --- !u!114 &2063083104
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12639,10 +12636,10 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 410087041}
+  - {fileID: 2063083100}
   - {fileID: 832575519}
   - {fileID: 588491397}
   - {fileID: 229045237}
-  - {fileID: 2063083100}
   - {fileID: 79668072}
   - {fileID: 174751940}
   - {fileID: 512582299}

@@ -17,13 +17,10 @@ public class GameManager : MonoBehaviour
     public float currentPlatformSpeed { get; private set; }
 
     public int score = 0;
-
-    public UIManager uiManager;
+    
     public PlatformManager platformManager;
     public PlatformManager networkedPlatformManager;
-    public PlayerController playerController;
-    public GhostPlayer ghostPlayer;
-    public ScreenEffectsController screenEffects;
+
 
     void OnEnable()
     {
@@ -102,7 +99,7 @@ public class GameManager : MonoBehaviour
             }
 
             DistanceTraveled += currentPlatformSpeed * Time.deltaTime;
-            uiManager.UpdateScore(score + (int)DistanceTraveled);
+            EventBusService.InvokeEvent(new ScoreUpdatedEvent(){ NewScore = score + (int)DistanceTraveled});
         }
     }
 
