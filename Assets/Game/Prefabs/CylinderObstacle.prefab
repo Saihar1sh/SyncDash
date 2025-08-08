@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 3964682599472173964}
   - component: {fileID: 2005995618738803120}
   - component: {fileID: 3571411499822819654}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: CylinderObstacle
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -116,7 +116,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 259054378609451044}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: ccea2496b4d57364aae523577723731c, type: 2}
   m_CullingMode: 0

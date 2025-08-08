@@ -7,8 +7,8 @@ public class PlayerAction
     public Vector3 position;
     public float timestamp;
     public float delay;
-    public float jumpDuration; // Added for jump synchronization
-    public int collectibleID; // Unique ID for collected item
+    public float jumpDuration;
+    public int collectibleID;
     
     public PlayerAction(ActionType type, float time, Vector3 pos = default, float duration = 0f, int collectibleId = 0)
     {
@@ -26,5 +26,4 @@ public enum ActionType
     Jump,
     Collect,
     Collide,
-    Move
 }

@@ -1,3 +1,4 @@
+using Arixen.ScriptSmith;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,14 +19,49 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Button restartButton;
     [SerializeField] private Button exitButton;
 
+    void Awake()
+    {
+        startButton.onClick.AddListener(() => EventBusService.InvokeEvent(new RestartGameEvent()));
+        restartButton.onClick.AddListener(() => EventBusService.InvokeEvent(new RestartGameEvent()));
+        exitButton.onClick.AddListener(ExitGame);
+    }
+
+    void OnEnable()
+    {
+        EventBusService.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+        EventBusService.Subscribe<ScoreUpdatedEvent>(OnScoreUpdated);
+    }
+
     void Start()
     {
-        // Add button listeners
-        startButton.onClick.AddListener(GameManager.Instance.RestartGame);
-        restartButton.onClick.AddListener(GameManager.Instance.RestartGame);
-        exitButton.onClick.AddListener(GameManager.Instance.ExitGame);
-
         ShowMainMenu();
+    }
+
+    private void OnDisable()
+    {
+        EventBusService.UnSubscribe<GameStateChangedEvent>(OnGameStateChanged);
+        EventBusService.UnSubscribe<ScoreUpdatedEvent>(OnScoreUpdated);
+    }
+
+    private void OnGameStateChanged(GameStateChangedEvent e)
+    {
+        switch (e.NewState)
+        {
+            case GameState.MainMenu:
+                ShowMainMenu();
+                break;
+            case GameState.Playing:
+                ShowGameUI();
+                break;
+            case GameState.GameOver:
+                ShowGameOverScreen(GameManager.Instance.score + (int)GameManager.Instance.DistanceTraveled);
+                break;
+        }
+    }
+
+    private void OnScoreUpdated(ScoreUpdatedEvent e)
+    {
+        UpdateScore(e.NewScore);
     }
 
     public void UpdateScore(int score)
@@ -33,25 +69,30 @@ public class UIManager : MonoBehaviour
         scoreText.text = "Score: " + score;
     }
 
-    public void ShowGameOverScreen(int finalScore)
+    private void ShowGameOverScreen(int finalScore)
     {
-        gameOverScoreText.text = "Score: " + finalScore;
+        gameOverScoreText.text = "GameOver\nScore: " + finalScore;
         mainMenuScreen.SetActive(false);
         gameUIScreen.SetActive(false);
         gameOverScreen.SetActive(true);
     }
 
-    public void ShowGameUI()
+    private void ShowGameUI()
     {
         mainMenuScreen.SetActive(false);
         gameUIScreen.SetActive(true);
         gameOverScreen.SetActive(false);
     }
 
-    public void ShowMainMenu()
+    private void ShowMainMenu()
     {
         mainMenuScreen.SetActive(true);
         gameUIScreen.SetActive(false);
         gameOverScreen.SetActive(false);
     }
+    private void ExitGame()
+    {
+        Application.Quit();
+    }
+
 }

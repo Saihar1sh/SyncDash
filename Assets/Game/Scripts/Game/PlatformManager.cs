@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Arixen.ScriptSmith;
 using UnityEngine;
 
 public class PlatformManager : MonoBehaviour
@@ -8,56 +10,49 @@ public class PlatformManager : MonoBehaviour
     public float platformLength = 50f;
     public Transform platformsParent;
     public Transform playerTransform;
-
+    public int safePlatformsCount = 2; // Number of initial platforms without obstacles/collectibles
     public bool isGhostWorld = false;
 
     [Header("Object Pooling")] public GameObject obstaclePrefab;
-    public GameObject collectiblePrefab;
+    public Collectible collectiblePrefab;
     public int obstaclePoolSize = 15;
     public int collectiblePoolSize = 30;
 
     private List<GameObject> platformPool = new List<GameObject>();
     private List<GameObject> activePlatforms = new List<GameObject>();
     private Queue<GameObject> obstaclePool = new Queue<GameObject>();
-    private Queue<GameObject> collectiblePool = new Queue<GameObject>();
-
-    private int obstacleLayer;
-    private int collectibleLayer;
+    private Queue<Collectible> collectiblePool = new Queue<Collectible>();
+    
+    private int localLayer;
     private int networkedLayer;
 
-    private static int randomSeed;
+    private System.Random random;   //For player and ghost to have same random values
 
     private int nextCollectibleID = 0;
 
     private List<Collectible> activeCollectibles = new List<Collectible>();
 
     private const string NetworkedLayerName = "Networked";
+    private const string LocalLayerName = "Local";
 
-    public void InitSeed(int seed)
+    private void Awake()
     {
-        randomSeed = seed;
+        localLayer = LayerMask.NameToLayer(LocalLayerName);
+        networkedLayer = LayerMask.NameToLayer(NetworkedLayerName);
+    }
+
+    void OnEnable()
+    {
+        EventBusService.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+    }
+
+    void OnDisable()
+    {
+        EventBusService.UnSubscribe<GameStateChangedEvent>(OnGameStateChanged);
     }
 
     void Start()
     {
-        Random.InitState(randomSeed);
-
-        if (isGhostWorld)
-        {
-            networkedLayer = LayerMask.NameToLayer(NetworkedLayerName);
-        }
-        else
-        {
-            obstacleLayer = LayerMask.NameToLayer("Obstacle");
-            collectibleLayer = LayerMask.NameToLayer("Collectible");
-        }
-
-        if (obstacleLayer == -1 || collectibleLayer == -1 || networkedLayer == -1)
-        {
-            Debug.LogError($"Please define layers correctly");
-            return;
-        }
-
         InitializePools();
 
         for (int i = 0; i < numberOfPlatforms; i++)
@@ -65,10 +60,25 @@ public class PlatformManager : MonoBehaviour
             GameObject platform = Instantiate(platformPrefab, platformsParent);
             platform.SetActive(false);
             platformPool.Add(platform);
-            if (isGhostWorld)
-            {
-                platform.layer = networkedLayer;
-            }
+        }
+    }
+    public void InitSeed(int seed)
+    {
+        random = new System.Random(seed);
+    }
+    private void OnGameStateChanged(GameStateChangedEvent e)
+    {
+        switch (e.NewState)
+        {
+            case GameState.MainMenu:
+                StopPlatforms();
+                break;
+            case GameState.Playing:
+                StartPlatforms();
+                break;
+            case GameState.GameOver:
+                StopPlatforms();
+                break;
         }
     }
 
@@ -101,7 +111,12 @@ public class PlatformManager : MonoBehaviour
             GameObject platform = platformPool[i];
             platform.transform.localPosition = new Vector3(0, 0, i * platformLength);
             platform.SetActive(true);
-            PopulatePlatform(platform);
+            platform.layer = isGhostWorld? networkedLayer : localLayer;
+
+            if (i >= safePlatformsCount)
+            {
+                PopulatePlatform(platform);
+            }
             activePlatforms.Add(platform);
         }
     }
@@ -122,16 +137,15 @@ public class PlatformManager : MonoBehaviour
         for (int i = 0; i < obstaclePoolSize; i++)
         {
             GameObject obj = Instantiate(obstaclePrefab, platformsParent);
-            obj.layer = obstacleLayer;
+            obj.transform.localRotation = Quaternion.Euler(0,0,90);
             obj.SetActive(false);
             obstaclePool.Enqueue(obj);
         }
 
         for (int i = 0; i < collectiblePoolSize; i++)
         {
-            GameObject obj = Instantiate(collectiblePrefab, platformsParent);
-            obj.layer = collectibleLayer;
-            obj.SetActive(false);
+            Collectible obj = Instantiate(collectiblePrefab, platformsParent);
+            obj.gameObject.SetActive(false);
             collectiblePool.Enqueue(obj);
         }
     }
@@ -151,8 +165,8 @@ public class PlatformManager : MonoBehaviour
 
     void PopulatePlatform(GameObject platform)
     {
-        int obstacleCount = Random.Range(1, 4);
-        for (int i = 0; i < obstacleCount; i++)
+        // Decide if an obstacle should be spawned on this platform
+        if (random.NextDouble() < 0.45) // Roughly 45% chance for an obstacle
         {
             if (obstaclePool.Count > 0)
             {
@@ -160,30 +174,25 @@ public class PlatformManager : MonoBehaviour
                 obstacle.transform.SetParent(platform.transform);
                 obstacle.transform.localPosition = GetRandomPositionOnPlatform();
                 obstacle.SetActive(true);
+                obstacle.layer = isGhostWorld ? networkedLayer : localLayer;
             }
         }
 
-        int collectibleCount = Random.Range(1, 3);
+        int collectibleCount = random.Next(0, 2);
         for (int i = 0; i < collectibleCount; i++)
         {
             if (collectiblePool.Count > 0)
             {
-                GameObject collectible = collectiblePool.Dequeue();
+                Collectible collectible = collectiblePool.Dequeue();
                 collectible.transform.SetParent(platform.transform);
-                if (isGhostWorld)
-                {
-                    collectible.layer = networkedLayer;
-                }
 
-                Collectible collectibleScript = collectible.GetComponent<Collectible>();
-                if (collectibleScript != null)
-                {
-                    collectibleScript.collectibleID = nextCollectibleID++;
-                    activeCollectibles.Add(collectibleScript);
-                }
-
+                collectible.collectibleID = nextCollectibleID++;
+                activeCollectibles.Add(collectible);
+                
                 collectible.transform.localPosition = GetRandomPositionOnPlatform();
-                collectible.SetActive(true);
+                collectible.gameObject.SetActive(true);
+                collectible.gameObject.layer = isGhostWorld ? networkedLayer : localLayer;
+
             }
         }
     }
@@ -194,21 +203,20 @@ public class PlatformManager : MonoBehaviour
         {
             if (child.gameObject.activeSelf)
             {
-                if (child.gameObject.layer == obstacleLayer)
+                if (child.CompareTag("Obstacle"))
                 {
                     child.gameObject.SetActive(false);
                     obstaclePool.Enqueue(child.gameObject);
                     child.SetParent(platformsParent);
                 }
-                else if (child.gameObject.layer == collectibleLayer)
+                else if (child.CompareTag("Collectible"))
                 {
-                    child.gameObject.SetActive(false);
-                    collectiblePool.Enqueue(child.gameObject);
-                    child.SetParent(platformsParent);
-                    Collectible collectibleScript = child.GetComponent<Collectible>();
-                    if (collectibleScript != null)
+                    if (child.TryGetComponent<Collectible>(out Collectible collectible))
                     {
-                        activeCollectibles.Remove(collectibleScript);
+                        collectible.gameObject.SetActive(false);
+                        collectiblePool.Enqueue(collectible);
+                        child.SetParent(platformsParent);
+                        activeCollectibles.Remove(collectible);
                     }
                 }
             }
@@ -217,7 +225,11 @@ public class PlatformManager : MonoBehaviour
 
     Vector3 GetRandomPositionOnPlatform()
     {
-        return new Vector3(0, 1f, Random.Range(-platformLength / 2, platformLength / 2));
+        float GetRandomFloat(float min, float max)
+        {
+            return (float)(random.NextDouble() * (max - min) + min);
+        }
+        return new Vector3(0, 1f, GetRandomFloat(-platformLength / 2, platformLength / 2));
     }
 
     public Collectible GetCollectibleByID(int id)

@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 5087169718733724462}
   - component: {fileID: 6713034275272621189}
   - component: {fileID: 2467856937260048269}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: CollectibleSphere
-  m_TagString: Untagged
+  m_TagString: Collectible
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -118,3 +118,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c891b37b3ea0e5489563f3b7df9eab1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  collectibleID: 0

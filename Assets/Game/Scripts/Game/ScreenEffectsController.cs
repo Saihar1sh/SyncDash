@@ -1,3 +1,4 @@
+using Arixen.ScriptSmith;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -15,6 +16,16 @@ public class ScreenEffectsController : MonoBehaviour
     public float shakeStrength = 0.2f;
     public float chromaticIntensity = 1f;
 
+    void OnEnable()
+    {
+        EventBusService.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+    }
+
+    void OnDisable()
+    {
+        EventBusService.UnSubscribe<GameStateChangedEvent>(OnGameStateChanged);
+    }
+
     void Start()
     {
         postProcessVolume.profile.TryGet(out chromaticAberration);
@@ -22,12 +33,20 @@ public class ScreenEffectsController : MonoBehaviour
         chromaticAberration.intensity.value = 0;
     }
 
+    private void OnGameStateChanged(GameStateChangedEvent e)
+    {
+        if (e.NewState == GameState.GameOver)
+        {
+            TriggerCrashEffects();
+        }
+    }
+
     void Update()
     {
         if (GameManager.Instance.currentState == GameState.Playing && motionBlur != null)
         {
             float speedPercent = GameManager.Instance.currentPlatformSpeed / GameManager.Instance.maxPlatformSpeed;
-            motionBlur.intensity.value = Mathf.Lerp(0.1f, 0.5f, speedPercent);
+            motionBlur.intensity.value = Mathf.Lerp(0.3f, 1f, speedPercent);
         }
     }
 

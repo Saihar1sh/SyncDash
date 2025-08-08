@@ -1,3 +1,4 @@
+using Arixen.ScriptSmith;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -9,16 +10,32 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody rb;
     private bool isGrounded;
-
-    [Header("Syncing")]
-    public LocalSyncManager syncManager;
-
+    
     [Header("Effects")]
     public ParticleSystem collectEffect;
 
-    private const string ObstacleLayerName = "Obstacle";
-    private const string CollectibleLayerName = "Collectible";
     
+
+    
+    
+    void OnEnable()
+    {
+        EventBusService.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+    }
+
+    void OnDisable()
+    {
+        EventBusService.UnSubscribe<GameStateChangedEvent>(OnGameStateChanged);
+    }
+
+    private void OnGameStateChanged(GameStateChangedEvent e)
+    {
+        if (e.NewState == GameState.Playing)
+        {
+            ResetPlayer();
+        }
+    }
+
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -43,38 +60,17 @@ public class PlayerController : MonoBehaviour
 
         float jumpDuration = 2 * (jumpForce / rb.mass) / Physics.gravity.magnitude;
 
-        var jumpAction = new PlayerAction(ActionType.Jump, Time.time,transform.localPosition, duration: jumpDuration);
-        syncManager.QueueAction(jumpAction);
+        EventBusService.InvokeEvent(new PlayerJumpEvent() { Position = transform.localPosition, JumpDuration = jumpDuration });
     }
-
-    void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.layer == LayerMask.NameToLayer(ObstacleLayerName))
-        {
-            GameManager.Instance.ChangeState(GameState.GameOver);
-            GameManager.Instance.ResetSpeedMultiplier();
-
-            var collideAction = new PlayerAction(ActionType.Collide, Time.time,collision.transform.localPosition);
-            syncManager.QueueAction(collideAction);
-
-            var dissolve = collision.gameObject.GetComponent<DissolveEffectController>();
-            if (dissolve != null)
-            {
-                dissolve.StartDissolve();
-            }
-            else
-            {
-                collision.gameObject.SetActive(false);
-            }
-        }
-    }
+    
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.layer == LayerMask.NameToLayer(CollectibleLayerName))
+        if (other.CompareTag("Collectible"))
         {
             GameManager.Instance.AddScore(10);
-            other.gameObject.GetComponent<Collectible>().Collect();
+            Collectible collectible = other.gameObject.GetComponent<Collectible>();
+            collectible.Collect();
             
             if (collectEffect != null)
             {
@@ -82,8 +78,22 @@ public class PlayerController : MonoBehaviour
                 collectEffect.Play();
             }
 
-            var collectAction = new PlayerAction(ActionType.Collect, Time.time, other.transform.localPosition, collectibleId: other.gameObject.GetComponent<Collectible>().collectibleID);
-            syncManager.QueueAction(collectAction);
+            EventBusService.InvokeEvent(new PlayerCollectEvent { Position = other.transform.localPosition, CollectibleID = collectible.collectibleID });
+        }
+        if (other.gameObject.CompareTag("Obstacle"))
+        {
+            Debug.Log("Collision with obstacle");
+            EventBusService.InvokeEvent(new PlayerCollideEvent { Position = other.transform.localPosition });
+
+            var dissolve = other.gameObject.GetComponent<DissolveEffectController>();
+            if (dissolve != null)
+            {
+                dissolve.StartDissolve();
+            }
+            else
+            {
+                other.gameObject.SetActive(false);
+            }
         }
     }
 
